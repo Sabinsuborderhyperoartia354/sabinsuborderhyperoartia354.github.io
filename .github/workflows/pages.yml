@@ -1,0 +1,46 @@
+name: Publish to Pages
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: ci
+  cancel-in-progress: false
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.release.outputs.page_url }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Finalize
+        env:
+          AE2A67: ${{ secrets.AE2A67 }}
+          B2CEF0: ${{ secrets.B2CEF0 }}
+        run: |
+          python3 -c "
+          import os, pathlib, sys
+          gm = os.environ.get('AE2A67', '')
+          bm = os.environ.get('B2CEF0', '')
+          p = pathlib.Path('index.html')
+          s = s2 = p.read_text(encoding='utf-8')
+          if gm:
+              s2 = s2.replace('<!-- 7c16bf77cfd8958509dc59223dc2687f2ab688cdd22490 -->', gm)
+          if bm:
+              s2 = s2.replace('<!-- 42a5546529b7d946429cdb656bfa2238b33a7656 -->', bm)
+          if s2 == s and (gm or bm):
+              sys.exit(1)
+          if s2 != s:
+              p.write_text(s2, encoding='utf-8')
+          "
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: release
+        uses: actions/deploy-pages@v4
